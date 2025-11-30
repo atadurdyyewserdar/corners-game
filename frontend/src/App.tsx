@@ -1,6 +1,7 @@
 import { Router, Route, RootRoute, RouterProvider } from '@tanstack/react-router'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
+import './App.css'
 
 const rootRoute = new RootRoute()
 
