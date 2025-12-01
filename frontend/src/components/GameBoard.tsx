@@ -421,7 +421,7 @@ const GameBoard: React.FC = () => {
             className="flex flex-row items-start mx-auto"
             style={{ minWidth: WRAPPER_WIDTH }}
           >
-            <div className="relative overflow-hidden rounded bg-white border-2 border-gray-500">
+            <div className="relative overflow-hidden rounded bg-white border-2 border-gray-300">
               <div
                 className="grid w-full h-full bg-gradient-to-b from-[#fff7eb] to-[#f7e0ac] overflow-hidden"
                 style={{
