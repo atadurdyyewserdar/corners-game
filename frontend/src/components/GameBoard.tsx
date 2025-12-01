@@ -363,12 +363,12 @@ const GameBoard: React.FC = () => {
   if (!started || !cornerShape) {
     return (
       <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
-        <h1 className="text-4xl font-extrabold text-[#7e511d] drop-shadow-sm text-center mb-8 mt-4">
+        <h1 className="text-4xl font-extrabold drop-shadow-sm text-center mb-8 mt-4">
           Corners Game
         </h1>
         <CornerConfig onSelect={startGameWithCorner} />
         <div className="mt-10 mb-4">
-          <p className="text-center text-base text-[#a77e4b]">
+          <p className="text-center text-base">
             Select a starting corner size for both players. <br />
             3x3 is classic—try 3x4 or 4x4 for unique strategy!
           </p>
@@ -398,10 +398,6 @@ const GameBoard: React.FC = () => {
             />
             <div
               className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none"
-              style={{
-                opacity: 0.72,
-                textShadow: "0 1px 0 #fff, 0 1px 12px #baad8033",
-              }}
             >
               vs
             </div>

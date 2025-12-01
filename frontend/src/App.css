@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+
+:root {
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+}

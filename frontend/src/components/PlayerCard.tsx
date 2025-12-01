@@ -10,8 +10,7 @@ const PlayerCard: React.FC<{
   <div
     className="flex flex-col items-center px-3 py-1 rounded select-none bg-white"
     style={{
-      border: active ? `2.2px solid #ffce3d` : "2px solid #cab38b",
-      boxShadow: active ? "0 0 12px 2px #e7b82e2c" : "0 1px 3px 1px #d6d3cf20",
+      border: active ? `2.2px solid #09a532ff` : "2px solid #cab38b",
       minWidth: 88,
       position: "relative",
       transition: "border 0.15s, background 0.15s, box-shadow 0.25s"
@@ -35,7 +34,7 @@ const PlayerCard: React.FC<{
     </span>
     {active && timer !== undefined && (
       <span
-        className="absolute -top-2 right-1 bg-[#72522e] text-white text-xs font-bold rounded px-2 py-px"
+        className="absolute -top-6 right-1 bg-[#72522e] text-white text-xs font-bold rounded-sm px-2 py-px"
         style={{
           boxShadow: "0 1px 4px #3331",
           fontSize: 13,
