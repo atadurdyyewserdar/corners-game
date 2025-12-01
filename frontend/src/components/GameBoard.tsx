@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import PlayerCard from "./PlayerCard";
+import CornerConfig, { cornerShapeLabel } from "./CornerConfig";
+import type { CornerShape } from "./CornerConfig";
 import type { Player } from "../types/game";
 
 const BLACK_PIECE_IMG = "/piece_black.png";
@@ -8,6 +11,9 @@ const RED_PIECE_IMG = "/piece_red.png";
 const BOARD_SIZE = 8;
 const CELL_SIZE = 64;
 const PIECE_SIZE = 0.8 * CELL_SIZE;
+const SIDEBAR_WIDTH = 230; // px for history sidebar
+const BOARD_DISPLAY_WIDTH = BOARD_SIZE * CELL_SIZE + 16;
+const WRAPPER_WIDTH = BOARD_DISPLAY_WIDTH + SIDEBAR_WIDTH + 32; // +gap
 
 type Position = { row: number; col: number };
 type PieceWithId = { id: string; player: Player; row: number; col: number };
@@ -16,20 +22,25 @@ type MoveEntry = { pieces: PieceWithId[]; from?: Position; to?: Position };
 const DARK_SQUARE = "#A46D41";
 const LIGHT_SQUARE = "#F7E0AC";
 
-function createInitialPieces(): PieceWithId[] {
-  let idCounter = 1;
+// Helper functions (identical to your latest refactor)
+// ...[omitted for brevity, same as your last variant above]
+
+function createInitialPieces(corner: CornerShape): PieceWithId[] {
+  let idCounterA = 1,
+    idCounterB = 1;
   const pieces: PieceWithId[] = [];
-  for (let row = 0; row < 3; row++)
-    for (let col = 0; col < 3; col++)
-      pieces.push({ id: `A-${idCounter++}`, player: "A", row, col });
-  idCounter = 1;
-  for (let row = BOARD_SIZE - 3; row < BOARD_SIZE; row++)
-    for (let col = BOARD_SIZE - 3; col < BOARD_SIZE; col++)
-      pieces.push({ id: `B-${idCounter++}`, player: "B", row, col });
+  // Player A: top-left corner
+  for (let row = 0; row < corner.rows; row++)
+    for (let col = 0; col < corner.cols; col++)
+      pieces.push({ id: `A-${idCounterA++}`, player: "A", row, col });
+  // Player B: bottom-right corner
+  for (let row = BOARD_SIZE - corner.rows; row < BOARD_SIZE; row++)
+    for (let col = BOARD_SIZE - corner.cols; col < BOARD_SIZE; col++)
+      pieces.push({ id: `B-${idCounterB++}`, player: "B", row, col });
   return pieces;
 }
 function clonePieces(pieces: PieceWithId[]): PieceWithId[] {
-  return pieces.map(p => ({ ...p }));
+  return pieces.map((p) => ({ ...p }));
 }
 function getBoardFromPieces(pieces: PieceWithId[]): (Player | null)[][] {
   const board: (Player | null)[][] = Array.from({ length: BOARD_SIZE }, () =>
@@ -38,18 +49,30 @@ function getBoardFromPieces(pieces: PieceWithId[]): (Player | null)[][] {
   for (const p of pieces) board[p.row][p.col] = p.player;
   return board;
 }
-function isPlayerInOpponentCorner(pieces: PieceWithId[], player: Player): boolean {
+function isPlayerInOpponentCorner(
+  pieces: PieceWithId[],
+  player: Player,
+  corner: CornerShape
+): boolean {
   if (player === "A") {
-    for (let row = BOARD_SIZE - 3; row < BOARD_SIZE; row++)
-      for (let col = BOARD_SIZE - 3; col < BOARD_SIZE; col++)
-        if (!pieces.some(p => p.player === "A" && p.row === row && p.col === col))
+    for (let row = BOARD_SIZE - corner.rows; row < BOARD_SIZE; row++)
+      for (let col = BOARD_SIZE - corner.cols; col < BOARD_SIZE; col++)
+        if (
+          !pieces.some(
+            (p) => p.player === "A" && p.row === row && p.col === col
+          )
+        )
           return false;
     return true;
   }
   if (player === "B") {
-    for (let row = 0; row < 3; row++)
-      for (let col = 0; col < 3; col++)
-        if (!pieces.some(p => p.player === "B" && p.row === row && p.col === col))
+    for (let row = 0; row < corner.rows; row++)
+      for (let col = 0; col < corner.cols; col++)
+        if (
+          !pieces.some(
+            (p) => p.player === "B" && p.row === row && p.col === col
+          )
+        )
           return false;
     return true;
   }
@@ -57,16 +80,24 @@ function isPlayerInOpponentCorner(pieces: PieceWithId[], player: Player): boolea
 }
 function getValidMoves(board: (Player | null)[][], pos: Position): Position[] {
   const directions = [
-    { dr: -1, dc: 0 }, { dr: 1, dc: 0 }, { dr: 0, dc: -1 }, { dr: 0, dc: 1 },
+    { dr: -1, dc: 0 },
+    { dr: 1, dc: 0 },
+    { dr: 0, dc: -1 },
+    { dr: 0, dc: 1 },
   ];
   const moves: Position[] = [];
   const visited = new Set<string>();
-  function posKey(p: Position) { return `${p.row},${p.col}`; }
+  function posKey(p: Position) {
+    return `${p.row},${p.col}`;
+  }
   directions.forEach(({ dr, dc }) => {
-    const nr = pos.row + dr, nc = pos.col + dc;
+    const nr = pos.row + dr,
+      nc = pos.col + dc;
     if (
-      nr >= 0 && nr < BOARD_SIZE &&
-      nc >= 0 && nc < BOARD_SIZE &&
+      nr >= 0 &&
+      nr < BOARD_SIZE &&
+      nc >= 0 &&
+      nc < BOARD_SIZE &&
       board[nr][nc] === null
     ) {
       moves.push({ row: nr, col: nc });
@@ -75,11 +106,17 @@ function getValidMoves(board: (Player | null)[][], pos: Position): Position[] {
   });
   function dfsJump(from: Position) {
     directions.forEach(({ dr, dc }) => {
-      const midR = from.row + dr, midC = from.col + dc;
-      const jumpR = from.row + dr * 2, jumpC = from.col + dc * 2;
+      const midR = from.row + dr,
+        midC = from.col + dc;
+      const jumpR = from.row + dr * 2,
+        jumpC = from.col + dc * 2;
       if (
-        jumpR >= 0 && jumpR < BOARD_SIZE && jumpC >= 0 && jumpC < BOARD_SIZE &&
-        board[midR][midC] !== null && board[jumpR][jumpC] === null
+        jumpR >= 0 &&
+        jumpR < BOARD_SIZE &&
+        jumpC >= 0 &&
+        jumpC < BOARD_SIZE &&
+        board[midR][midC] !== null &&
+        board[jumpR][jumpC] === null
       ) {
         const jumpTarget: Position = { row: jumpR, col: jumpC };
         const key = posKey(jumpTarget);
@@ -94,7 +131,11 @@ function getValidMoves(board: (Player | null)[][], pos: Position): Position[] {
   dfsJump(pos);
   return moves;
 }
-function findJumpPath(board: (Player | null)[][], from: Position, to: Position): Position[] {
+function findJumpPath(
+  board: (Player | null)[][],
+  from: Position,
+  to: Position
+): Position[] {
   if (
     (Math.abs(from.row - to.row) === 1 && from.col === to.col) ||
     (Math.abs(from.col - to.col) === 1 && from.row === to.row)
@@ -106,14 +147,23 @@ function findJumpPath(board: (Player | null)[][], from: Position, to: Position):
   function dfs(current: Position): boolean {
     if (current.row === to.row && current.col === to.col) return true;
     const dirs = [
-      { dr: -1, dc: 0 }, { dr: 1, dc: 0 }, { dr: 0, dc: -1 }, { dr: 0, dc: 1 },
+      { dr: -1, dc: 0 },
+      { dr: 1, dc: 0 },
+      { dr: 0, dc: -1 },
+      { dr: 0, dc: 1 },
     ];
     for (const { dr, dc } of dirs) {
-      const midR = current.row + dr, midC = current.col + dc;
-      const jumpR = current.row + dr * 2, jumpC = current.col + dc * 2;
+      const midR = current.row + dr,
+        midC = current.col + dc;
+      const jumpR = current.row + dr * 2,
+        jumpC = current.col + dc * 2;
       if (
-        jumpR >= 0 && jumpR < BOARD_SIZE && jumpC >= 0 && jumpC < BOARD_SIZE &&
-        board[midR][midC] !== null && board[jumpR][jumpC] === null &&
+        jumpR >= 0 &&
+        jumpR < BOARD_SIZE &&
+        jumpC >= 0 &&
+        jumpC < BOARD_SIZE &&
+        board[midR][midC] !== null &&
+        board[jumpR][jumpC] === null &&
         !visited.has(`${jumpR},${jumpC}`)
       ) {
         visited.add(`${jumpR},${jumpC}`);
@@ -125,78 +175,37 @@ function findJumpPath(board: (Player | null)[][], from: Position, to: Position):
     return false;
   }
   dfs(from);
-  return path[path.length - 1].row === to.row && path[path.length - 1].col === to.col ? path : [from, to];
+  return path[path.length - 1].row === to.row &&
+    path[path.length - 1].col === to.col
+    ? path
+    : [from, to];
 }
 
-const PlayerCard: React.FC<{
-  label: string;
-  pieceImg: string;
-  active: boolean;
-  timer?: number;
-  color?: string;
-}> = ({ label, pieceImg, active, timer, color }) => (
-  <div
-    className={`flex flex-col items-center px-3 py-1 rounded select-none bg-white`}
-    style={{
-      border: active ? `2.2px solid #ffce3d` : "2px solid #cab38b",
-      boxShadow: active ? "0 0 12px 2px #e7b82e2c" : "0 1px 3px 1px #d6d3cf20",
-      minWidth: 88,
-      position: "relative",
-      transition: "border 0.15s, background 0.15s, box-shadow 0.25s",
-    }}
-  >
-    <img
-      src={pieceImg}
-      alt="Piece"
-      className="w-6 h-6 mb-1"
-      style={{
-        filter:
-          color === "red"
-            ? "drop-shadow(0 0 6px #f43f5e77)"
-            : "drop-shadow(0 0 6px #fff)",
-      }}
-    />
-    <span className="font-bold text-xs uppercase tracking-wider"
-      style={{color: color === "red" ? "#a00" : "#84623a"}}
-    >
-      {label}
-    </span>
-    {active && timer !== undefined && (
-      <span
-        className="absolute -top-2 right-1 bg-[#72522e] text-white text-xs font-bold rounded px-2 py-px"
-        style={{
-          boxShadow: "0 1px 4px #3331",
-          fontSize: 13,
-          letterSpacing: 1.2,
-        }}
-      >
-        {timer}s
-      </span>
-    )}
-  </div>
-);
-
-const GameBoard = () => {
+const GameBoard: React.FC = () => {
   const [started, setStarted] = useState(false);
-  const [pieces, setPieces] = useState<PieceWithId[]>(createInitialPieces());
+  const [cornerShape, setCornerShape] = useState<CornerShape | null>(null);
+  const [pieces, setPieces] = useState<PieceWithId[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player>("A");
   const [selected, setSelected] = useState<PieceWithId | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<Player>(null);
-  const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
+  const [lastMove, setLastMove] = useState<{
+    from: Position;
+    to: Position;
+  } | null>(null);
   const [animating, setAnimating] = useState(false);
   const [turnSeconds, setTurnSeconds] = useState(0);
-  const [history, setHistory] = useState<MoveEntry[]>([
-    { pieces: createInitialPieces() }
-  ]);
-  const interval = useRef<number | null>(null);
+  const [history, setHistory] = useState<MoveEntry[]>([]);
+  const interval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (started && !gameOver) {
       interval.current = setInterval(() => {
-        setTurnSeconds(s => s + 1);
+        setTurnSeconds((s) => s + 1);
       }, 1000);
-      return () => { if (interval.current) clearInterval(interval.current); };
+      return () => {
+        if (interval.current) clearInterval(interval.current);
+      };
     }
     if (!started || gameOver) {
       if (interval.current) clearInterval(interval.current);
@@ -205,14 +214,12 @@ const GameBoard = () => {
 
   useEffect(() => {
     setTurnSeconds(0);
-  }, [currentPlayer, started]);
+  }, [currentPlayer, started, cornerShape]);
 
-  const board = getBoardFromPieces(pieces);
-  const validMovePositions = selected ? getValidMoves(board, selected) : [];
-
-  function resetGame(alsoStop?: boolean) {
-    const init = createInitialPieces();
-    setPieces(init);
+  function startGameWithCorner(shape: CornerShape) {
+    setCornerShape(shape);
+    const initial = createInitialPieces(shape);
+    setPieces(initial);
     setCurrentPlayer("A");
     setSelected(null);
     setGameOver(false);
@@ -220,19 +227,48 @@ const GameBoard = () => {
     setLastMove(null);
     setAnimating(false);
     setTurnSeconds(0);
-    setHistory([{ pieces: clonePieces(init) }]);
-    if (alsoStop) setStarted(false);
+    setHistory([{ pieces: clonePieces(initial) }]);
+    setStarted(true);
+  }
+
+  useEffect(() => {
+    if (cornerShape && (!pieces.length || !started)) {
+      const initial = createInitialPieces(cornerShape);
+      setPieces(initial);
+      setHistory([{ pieces: clonePieces(initial) }]);
+    }
+    // eslint-disable-next-line
+  }, [cornerShape]);
+
+  const board = getBoardFromPieces(pieces);
+  const validMovePositions = selected ? getValidMoves(board, selected) : [];
+
+  function resetGame(alsoStop?: boolean) {
+    if (cornerShape) {
+      const init = createInitialPieces(cornerShape);
+      setPieces(init);
+      setCurrentPlayer("A");
+      setSelected(null);
+      setGameOver(false);
+      setWinner(null);
+      setLastMove(null);
+      setAnimating(false);
+      setTurnSeconds(0);
+      setHistory([{ pieces: clonePieces(init) }]);
+      if (alsoStop) {
+        setStarted(false);
+        setCornerShape(null);
+      }
+    }
   }
 
   async function animatePieceStepwise(piece: PieceWithId, path: Position[]) {
     setAnimating(true);
     let newPositions = clonePieces(pieces);
     for (let i = 1; i < path.length; ++i) {
-      await new Promise(res => setTimeout(res, i === 1 ? 90 : 300));
-      newPositions = newPositions.map(p =>
-        p.id === piece.id
-          ? { ...p, row: path[i].row, col: path[i].col }
-          : p
+      await new Promise((res) => setTimeout(res, i === 1 ? 90 : 300));
+      newPositions = newPositions.map((p) =>
+        p.id === piece.id ? { ...p, row: path[i].row, col: path[i].col } : p
       );
       setPieces(clonePieces(newPositions));
       setLastMove({ from: path[0], to: path[path.length - 1] });
@@ -242,29 +278,29 @@ const GameBoard = () => {
 
   function handleCellClick(row: number, col: number) {
     if (!started || gameOver || animating) return;
-    const piece = pieces.find(p => p.row === row && p.col === col);
+    const piece = pieces.find((p) => p.row === row && p.col === col);
     if (selected) {
       const moves = getValidMoves(board, selected);
-      if (
-        !piece &&
-        moves.some((p) => p.row === row && p.col === col)
-      ) {
+      if (!piece && moves.some((p) => p.row === row && p.col === col)) {
         const path = findJumpPath(board, selected, { row, col });
         animatePieceStepwise(selected, path).then(() => {
-          const movedPieces = pieces.map(p =>
-            p.id === selected.id
-              ? { ...p, row, col }
-              : p
+          const movedPieces = pieces.map((p) =>
+            p.id === selected.id ? { ...p, row, col } : p
           );
-          setHistory(prev => [
+          setHistory((prev) => [
             ...prev,
             {
-              pieces: movedPieces.map(p => ({ ...p })),
+              pieces: movedPieces.map((p) => ({ ...p })),
               from: { row: path[0].row, col: path[0].col },
-              to: { row: path[path.length - 1].row, col: path[path.length - 1].col }
-            }
+              to: {
+                row: path[path.length - 1].row,
+                col: path[path.length - 1].col,
+              },
+            },
           ]);
-          if (isPlayerInOpponentCorner(movedPieces, currentPlayer)) {
+          if (
+            isPlayerInOpponentCorner(movedPieces, currentPlayer, cornerShape!)
+          ) {
             setGameOver(true);
             setWinner(currentPlayer);
             setPieces(movedPieces);
@@ -289,18 +325,19 @@ const GameBoard = () => {
 
   function cellOutline(row: number, col: number): string | undefined {
     let outline = "";
-    if (selected && selected.row === row && selected.col === col) outline = "#facc15";
+    if (selected && selected.row === row && selected.col === col)
+      outline = "#facc15";
     else if (
       selected &&
       validMovePositions.some((p) => p.row === row && p.col === col)
     )
       outline = "#14c8ea";
-    else if (lastMove && lastMove.to.row === row && lastMove.to.col === col) outline = "#6366f1";
-    else if (lastMove && lastMove.from.row === row && lastMove.from.col === col) outline = "#818cf8";
+    else if (lastMove && lastMove.to.row === row && lastMove.to.col === col)
+      outline = "#6366f1";
+    else if (lastMove && lastMove.from.row === row && lastMove.from.col === col)
+      outline = "#818cf8";
     return outline || undefined;
   }
-
-  // Show overlays only for the last move's `from` and `to`, not all path steps during multi-jump.
   function isHistoryOverlay(row: number, col: number) {
     if (!history.length) return null;
     const latest = history[history.length - 1];
@@ -309,54 +346,61 @@ const GameBoard = () => {
     if (latest.to.row === row && latest.to.col === col) return "to";
     return null;
   }
-
   function jumpToHistory(idx: number) {
-    setPieces(history[idx].pieces.map(p => ({ ...p })));
+    setPieces(history[idx].pieces.map((p) => ({ ...p })));
     setCurrentPlayer(idx % 2 === 0 ? "A" : "B");
     setSelected(null);
     setGameOver(false);
     setWinner(null);
-    setLastMove(history[idx].from && history[idx].to
-      ? { from: history[idx].from, to: history[idx].to }
-      : null
+    setLastMove(
+      history[idx].from && history[idx].to
+        ? { from: history[idx].from, to: history[idx].to }
+        : null
     );
     setTurnSeconds(0);
   }
 
-  return (
-    <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
-      {!started ? (
-        <div className="flex flex-col items-center gap-10 py-16">
-          <h1 className="text-4xl font-extrabold text-[#7e511d] drop-shadow-sm text-center mb-2">
-            Corners Game
-          </h1>
-          <button
-            className="px-8 py-3 rounded text-2xl font-bold bg-gradient-to-br from-[#ffeec8] via-[#A46D41]/80 to-[#ebceb0] text-[#7e511d] shadow-lg hover:scale-105 transition cursor-pointer"
-            onClick={() => { setStarted(true); resetGame(); }}
-            style={{ cursor: "pointer" }}
-          >
-            Start Game
-          </button>
-          <p className="text-center text-lg text-[#ad905b] mt-6 px-3 max-w-xl">
-            Classic Corners with animated moves and a chess.com inspired board.
+  if (!started || !cornerShape) {
+    return (
+      <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
+        <h1 className="text-4xl font-extrabold text-[#7e511d] drop-shadow-sm text-center mb-8 mt-4">
+          Corners Game
+        </h1>
+        <CornerConfig onSelect={startGameWithCorner} />
+        <div className="mt-10 mb-4">
+          <p className="text-center text-base text-[#a77e4b]">
+            Select a starting corner size for both players. <br />
+            3x3 is classic—try 3x4 or 4x4 for unique strategy!
           </p>
         </div>
-      ) : (
-        <>
-          {/* Centered Player Panel over the board */}
-          <div className="flex flex-row mb-3 w-full justify-center items-center gap-12">
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
+      <div className="w-full flex flex-col items-center">
+        {/* Main content wrapper, fixed width: board+sidebar */}
+        <div
+          className="flex flex-col items-center"
+          style={{ width: WRAPPER_WIDTH, minWidth: WRAPPER_WIDTH }}
+        >
+          {/* Centered player panel */}
+          <div className="w-full flex flex-row mb-3 gap">
             <PlayerCard
               label="Player A"
               pieceImg={BLACK_PIECE_IMG}
               active={currentPlayer === "A" && !gameOver}
-              timer={currentPlayer === "A" && !gameOver ? turnSeconds : undefined}
+              timer={
+                currentPlayer === "A" && !gameOver ? turnSeconds : undefined
+              }
               color="#6b4c29"
             />
             <div
               className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none"
               style={{
                 opacity: 0.72,
-                textShadow: "0 1px 0 #fff, 0 1px 12px #baad8033"
+                textShadow: "0 1px 0 #fff, 0 1px 12px #baad8033",
               }}
             >
               vs
@@ -365,52 +409,57 @@ const GameBoard = () => {
               label="Player B"
               pieceImg={RED_PIECE_IMG}
               active={currentPlayer === "B" && !gameOver}
-              timer={currentPlayer === "B" && !gameOver ? turnSeconds : undefined}
+              timer={
+                currentPlayer === "B" && !gameOver ? turnSeconds : undefined
+              }
               color="#b91c1c"
             />
           </div>
-          <div className="flex flex-row justify-center items-start gap-8 w-full">
-            {/* Board */}
-            <div
-              className="relative overflow-hidden rounded bg-white border-4 border-[#ddc391] shadow-lg"
-              style={{
-                width: BOARD_SIZE * CELL_SIZE + 16,
-                height: BOARD_SIZE * CELL_SIZE + 16,
-              }}
-            >
+
+          {/* Board+History, perfectly centered as a total unit */}
+          <div
+            className="flex flex-row items-start mx-auto"
+            style={{ minWidth: WRAPPER_WIDTH }}
+          >
+            <div className="relative overflow-hidden rounded bg-white border-2 border-gray-500">
               <div
+                className="grid w-full h-full bg-gradient-to-b from-[#fff7eb] to-[#f7e0ac] overflow-hidden"
                 style={{
-                  display: "grid",
                   gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
                   gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
-                  width: "100%",
-                  height: "100%",
-                  background: `linear-gradient(180deg, #fff7eb 0%, #f7e0ac 100%)`,
-                  borderRadius: 13,
-                  overflow: "hidden"
                 }}
               >
+                {/* ...cell rendering unchanged */}
                 {Array.from({ length: BOARD_SIZE }).map((_, row) =>
                   Array.from({ length: BOARD_SIZE }).map((_, col) => {
-                    const color = (row + col) % 2 === 1 ? DARK_SQUARE : LIGHT_SQUARE;
+                    const color =
+                      (row + col) % 2 === 1 ? DARK_SQUARE : LIGHT_SQUARE;
                     const outlineColor = cellOutline(row, col);
                     const histType = isHistoryOverlay(row, col);
                     let highlightBG = "";
-                    if (outlineColor === "#14c8ea") highlightBG = "radial-gradient(circle at 55% 60%, #28e0ff99 0%, #f7e0ac33 100%)";
-                    if (outlineColor === "#facc15") highlightBG = "radial-gradient(circle at 45% 40%, #ffe89399 0%, #a46d4133 100%)";
+                    if (outlineColor === "#14c8ea")
+                      highlightBG =
+                        "radial-gradient(circle at 55% 60%, #28e0ff99 0%, #f7e0ac33 100%)";
+                    if (outlineColor === "#facc15")
+                      highlightBG =
+                        "radial-gradient(circle at 45% 40%, #ffe89399 0%, #a46d4133 100%)";
                     return (
                       <div
                         key={`${row}-${col}`}
-                        className="relative rounded"
+                        className="relative rounded-[2px]"
                         style={{
                           width: CELL_SIZE,
                           height: CELL_SIZE,
                           background: highlightBG || color,
                           border: "none",
-                          boxShadow: (row === 0 || col === 0 || row === BOARD_SIZE - 1 || col === BOARD_SIZE - 1)
-                            ? "0 2px 15px #52391d11"
-                            : "",
-                          cursor: "pointer"
+                          boxShadow:
+                            row === 0 ||
+                            col === 0 ||
+                            row === BOARD_SIZE - 1 ||
+                            col === BOARD_SIZE - 1
+                              ? "0 2px 15px #52391d11"
+                              : "",
+                          cursor: "pointer",
                         }}
                         onClick={() => handleCellClick(row, col)}
                       >
@@ -424,22 +473,22 @@ const GameBoard = () => {
                               right: 0,
                               bottom: 0,
                               border: `3px solid ${outlineColor}`,
-                              borderRadius: 8,
+                              borderRadius: 4,
                               zIndex: 2,
                               boxSizing: "border-box",
-                              boxShadow: "0 0 8px 2px #dcfaee22"
+                              boxShadow: "0 0 8px 2px #dcfaee22",
                             }}
                           />
                         )}
-                        {/* Only show last move's from/to, not intermediate steps */}
                         {histType && (
                           <div
                             className="absolute inset-0 rounded"
                             style={{
-                              background: histType === "from"
-                                ? "rgba(70,123,233,0.18)"
-                                : "rgba(251,201,53,0.17)",
-                              zIndex: 1
+                              background:
+                                histType === "from"
+                                  ? "rgba(70,123,233,0.18)"
+                                  : "rgba(251,201,53,0.17)",
+                              zIndex: 1,
                             }}
                           />
                         )}
@@ -448,14 +497,14 @@ const GameBoard = () => {
                   })
                 )}
               </div>
-              {pieces.map(piece => (
+              {pieces.map((piece) => (
                 <motion.img
                   key={piece.id}
                   src={piece.player === "A" ? BLACK_PIECE_IMG : RED_PIECE_IMG}
                   alt={piece.player === "A" ? "Player A" : "Player B"}
                   animate={{
                     left: piece.col * CELL_SIZE + (CELL_SIZE - PIECE_SIZE) / 2,
-                    top: piece.row * CELL_SIZE + (CELL_SIZE - PIECE_SIZE) / 2
+                    top: piece.row * CELL_SIZE + (CELL_SIZE - PIECE_SIZE) / 2,
                   }}
                   initial={false}
                   transition={{ type: "spring", stiffness: 520, damping: 32 }}
@@ -466,29 +515,51 @@ const GameBoard = () => {
                     zIndex: 10,
                     pointerEvents: "none",
                     userSelect: "none",
-                    filter: piece.player === "A"
-                      ? "drop-shadow(0 2px 10px #55380a8c)"
-                      : "drop-shadow(0 2px 12px #a63f2470)"
+                    filter:
+                      piece.player === "A"
+                        ? "drop-shadow(0 2px 10px #55380a8c)"
+                        : "drop-shadow(0 2px 12px #a63f2470)",
                   }}
                   draggable={false}
                 />
               ))}
             </div>
-            {/* History: only after game ends! */}
-            {gameOver && (
-              <div className="flex flex-col items-start rounded bg-white border border-gray-300 shadow px-3 py-2 max-h-[520px] overflow-y-auto">
-                <div className="font-bold mb-2 text-[#a46d41] text-base">Move history</div>
+            {/* History - fixed width */}
+            <div
+              className="flex flex-col items-start rounded bg-white border border-gray-300 shadow px-3 py-2 ml-8"
+              style={{
+                width: SIDEBAR_WIDTH,
+                minWidth: SIDEBAR_WIDTH,
+                maxHeight: BOARD_SIZE * CELL_SIZE + 16,
+              }}
+            >
+              <div className="font-bold mb-2 text-[#a46d41] text-base">
+                Move history{" "}
+                <span className="ml-1 text-xs font-normal text-[#ad905b]">
+                  ({cornerShapeLabel(cornerShape)})
+                </span>
+              </div>
+              <div className="overflow-y-auto w-full" style={{ maxHeight: BOARD_SIZE * CELL_SIZE - 45 }}>
                 {history.map((item, idx) => (
                   <button
                     key={idx}
-                    className={`mb-1 flex gap-2 items-center text-xs font-mono rounded px-2 py-[2px]  ${idx === history.length - 1 ? "bg-[#eee3bc] font-bold border border-[#e4d39f]" : "bg-white border border-transparent"} hover:bg-[#f7e0ac]`}
-                    onClick={() => jumpToHistory(idx)}
-                    style={{ minWidth: 80, cursor: "pointer" }}
+                    className={`mb-1 flex gap-2 items-center text-xs font-mono rounded px-2 py-[2px]  ${
+                      idx === history.length - 1
+                        ? "bg-[#eee3bc] font-bold border border-[#e4d39f]"
+                        : "bg-white border border-transparent"
+                    } hover:bg-[#f7e0ac]`}
+                    onClick={gameOver ? () => jumpToHistory(idx) : undefined}
+                    style={{
+                      minWidth: 80,
+                      cursor: gameOver ? "pointer" : "not-allowed",
+                      opacity: gameOver ? 1 : 0.8,
+                    }}
+                    tabIndex={gameOver ? 0 : -1}
+                    disabled={!gameOver}
+                    aria-disabled={!gameOver}
                   >
                     <span className={`pr-1`}>
-                      {idx === 0
-                        ? "Start"
-                        : `#${idx}`}
+                      {idx === 0 ? "Start" : `#${idx}`}
                     </span>
                     {idx !== 0 && item.from && item.to && (
                       <span
@@ -504,10 +575,20 @@ const GameBoard = () => {
                     )}
                   </button>
                 ))}
+                {gameOver === false && (
+                  <div className="text-xs italic text-gray-400 w-full pl-1 pt-2">
+                    (Available for step-back after game ends)
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-          <div className="flex flex-row gap-6 justify-center items-center mt-7">
+
+          {/* Buttons - centered exactly below above wrapper */}
+          <div
+            className="flex flex-row gap-6 mt-7"
+            style={{ width: WRAPPER_WIDTH }}
+          >
             <button
               className="px-5 py-2 rounded font-semibold text-[#A46D41] bg-[#f3e1c0] border border-[#ca9b69] shadow hover:bg-[#e5d3ba] hover:scale-105 transition cursor-pointer"
               onClick={() => resetGame(false)}
@@ -526,16 +607,20 @@ const GameBoard = () => {
             </button>
           </div>
           {gameOver && (
-            <div className="mt-7 px-8 py-4 bg-gradient-to-br from-[#f7e0ac] to-[#a46d41] border-2 border-[#d7ad81] rounded shadow text-2xl font-black text-[#7e511d] tracking-wide uppercase flex flex-col items-center">
+            <div
+              className="mt-7 px-8 py-4 bg-gradient-to-br from-[#f7e0ac] to-[#a46d41] border border-[#d7ad81] rounded shadow text-2xl font-black text-[#7e511d] tracking-wide uppercase flex flex-col items-center"
+              style={{ width: WRAPPER_WIDTH }}
+            >
               <div>
                 Winner:{" "}
-                <span className={"ml-2"}
+                <span
+                  className={"ml-2"}
                   style={{
                     color: winner === "A" ? "#6b4c29" : "#b91c1c",
-                    textShadow: winner === "A"
-                      ? "0 2px 7px #fff9"
-                      : "0 2px 7px #fdcfcc",
-                  }}>
+                    textShadow:
+                      winner === "A" ? "0 2px 7px #fff9" : "0 2px 7px #fdcfcc",
+                  }}
+                >
                   {winner === "A" ? "Player A" : "Player B"}
                 </span>
               </div>
@@ -544,8 +629,8 @@ const GameBoard = () => {
               </div>
             </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 };
