@@ -22,9 +22,6 @@ type MoveEntry = { pieces: PieceWithId[]; from?: Position; to?: Position };
 const DARK_SQUARE = "#A46D41";
 const LIGHT_SQUARE = "#F7E0AC";
 
-// Helper functions (identical to your latest refactor)
-// ...[omitted for brevity, same as your last variant above]
-
 function createInitialPieces(corner: CornerShape): PieceWithId[] {
   let idCounterA = 1,
     idCounterB = 1;
@@ -327,11 +324,11 @@ const GameBoard: React.FC = () => {
     let outline = "";
     if (selected && selected.row === row && selected.col === col)
       outline = "#facc15";
-    else if (
-      selected &&
-      validMovePositions.some((p) => p.row === row && p.col === col)
-    )
-      outline = "#14c8ea";
+    // else if (
+    //   selected &&
+    //   validMovePositions.some((p) => p.row === row && p.col === col)
+    // )
+    //   outline = "#14c8ea";
     else if (lastMove && lastMove.to.row === row && lastMove.to.col === col)
       outline = "#6366f1";
     else if (lastMove && lastMove.from.row === row && lastMove.from.col === col)
