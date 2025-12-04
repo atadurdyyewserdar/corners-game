@@ -1,3 +1,4 @@
+// Main game board component for Corners Game
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import PlayerCard from "./PlayerCard";
@@ -5,9 +6,11 @@ import CornerConfig, { cornerShapeLabel } from "./CornerConfig";
 import type { CornerShape } from "./CornerConfig";
 import type { Player } from "../types/game";
 
+// Piece images
 const BLACK_PIECE_IMG = "/piece_black.png";
 const RED_PIECE_IMG = "/piece_red.png";
 
+// Board and layout constants
 const BOARD_SIZE = 8;
 const CELL_SIZE = 64;
 const PIECE_SIZE = 0.8 * CELL_SIZE;
@@ -15,13 +18,16 @@ const SIDEBAR_WIDTH = 230; // px for history sidebar
 const BOARD_DISPLAY_WIDTH = BOARD_SIZE * CELL_SIZE + 16;
 const WRAPPER_WIDTH = BOARD_DISPLAY_WIDTH + SIDEBAR_WIDTH + 32; // +gap
 
+// Types for board positions and pieces
 type Position = { row: number; col: number };
 type PieceWithId = { id: string; player: Player; row: number; col: number };
 type MoveEntry = { pieces: PieceWithId[]; from?: Position; to?: Position };
 
+// Board colors
 const DARK_SQUARE = "#A46D41";
 const LIGHT_SQUARE = "#F7E0AC";
 
+// Create initial pieces for both players based on corner shape
 function createInitialPieces(corner: CornerShape): PieceWithId[] {
   let idCounterA = 1,
     idCounterB = 1;
@@ -36,9 +42,11 @@ function createInitialPieces(corner: CornerShape): PieceWithId[] {
       pieces.push({ id: `B-${idCounterB++}`, player: "B", row, col });
   return pieces;
 }
+// Deep clone pieces array
 function clonePieces(pieces: PieceWithId[]): PieceWithId[] {
   return pieces.map((p) => ({ ...p }));
 }
+// Convert pieces array to board matrix
 function getBoardFromPieces(pieces: PieceWithId[]): (Player | null)[][] {
   const board: (Player | null)[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array.from({ length: BOARD_SIZE }, () => null)
@@ -46,6 +54,7 @@ function getBoardFromPieces(pieces: PieceWithId[]): (Player | null)[][] {
   for (const p of pieces) board[p.row][p.col] = p.player;
   return board;
 }
+// Check if a player has all their pieces in the opponent's corner
 function isPlayerInOpponentCorner(
   pieces: PieceWithId[],
   player: Player,
@@ -75,6 +84,7 @@ function isPlayerInOpponentCorner(
   }
   return false;
 }
+// Get all valid moves (including jumps) for a piece
 function getValidMoves(board: (Player | null)[][], pos: Position): Position[] {
   const directions = [
     { dr: -1, dc: 0 },
@@ -128,6 +138,7 @@ function getValidMoves(board: (Player | null)[][], pos: Position): Position[] {
   dfsJump(pos);
   return moves;
 }
+// Find the path for a jump move from one position to another
 function findJumpPath(
   board: (Player | null)[][],
   from: Position,
@@ -178,7 +189,9 @@ function findJumpPath(
     : [from, to];
 }
 
+// Main GameBoard component
 const GameBoard: React.FC = () => {
+  // Game state
   const [started, setStarted] = useState(false);
   const [cornerShape, setCornerShape] = useState<CornerShape | null>(null);
   const [pieces, setPieces] = useState<PieceWithId[]>([]);
@@ -193,8 +206,10 @@ const GameBoard: React.FC = () => {
   const [animating, setAnimating] = useState(false);
   const [turnSeconds, setTurnSeconds] = useState(0);
   const [history, setHistory] = useState<MoveEntry[]>([]);
+  // Timer interval ref
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Handle turn timer
   useEffect(() => {
     if (started && !gameOver) {
       interval.current = setInterval(() => {
@@ -209,10 +224,12 @@ const GameBoard: React.FC = () => {
     }
   }, [started, gameOver, currentPlayer]);
 
+  // Reset timer on turn or game start
   useEffect(() => {
     setTurnSeconds(0);
   }, [currentPlayer, started, cornerShape]);
 
+  // Start game with selected corner shape
   function startGameWithCorner(shape: CornerShape) {
     setCornerShape(shape);
     const initial = createInitialPieces(shape);
@@ -228,6 +245,7 @@ const GameBoard: React.FC = () => {
     setStarted(true);
   }
 
+  // Initialize pieces if corner shape changes
   useEffect(() => {
     if (cornerShape && (!pieces.length || !started)) {
       const initial = createInitialPieces(cornerShape);
@@ -237,9 +255,15 @@ const GameBoard: React.FC = () => {
     // eslint-disable-next-line
   }, [cornerShape]);
 
+  // Board matrix from pieces
   const board = getBoardFromPieces(pieces);
-  const validMovePositions = selected ? getValidMoves(board, selected) : [];
 
+
+  // Highlight valid moves - disabled for clarity
+  // const validMovePositions = selected ? getValidMoves(board, selected) : [];
+
+  
+  // Reset game state (optionally stop game)
   function resetGame(alsoStop?: boolean) {
     if (cornerShape) {
       const init = createInitialPieces(cornerShape);
@@ -259,6 +283,7 @@ const GameBoard: React.FC = () => {
     }
   }
 
+  // Animate piece movement stepwise along a path
   async function animatePieceStepwise(piece: PieceWithId, path: Position[]) {
     setAnimating(true);
     let newPositions = clonePieces(pieces);
@@ -273,6 +298,7 @@ const GameBoard: React.FC = () => {
     setAnimating(false);
   }
 
+  // Handle cell click: select piece or move
   function handleCellClick(row: number, col: number) {
     if (!started || gameOver || animating) return;
     const piece = pieces.find((p) => p.row === row && p.col === col);
@@ -320,21 +346,32 @@ const GameBoard: React.FC = () => {
     }
   }
 
+  // Returns the outline color for a cell based on its state:
+  // - Selected piece: yellow
+  // - Valid move: cyan (currently disabled)
+  // - Last move: blue/purple
   function cellOutline(row: number, col: number): string | undefined {
     let outline = "";
+    // Highlight selected piece
     if (selected && selected.row === row && selected.col === col)
       outline = "#facc15";
-    // else if (
-    //   selected &&
-    //   validMovePositions.some((p) => p.row === row && p.col === col)
-    // )
-    //   outline = "#14c8ea";
+    // Highlight valid moves for selected piece (disabled)
+    /*
+    else if (
+      selected &&
+      validMovePositions.some((p) => p.row === row && p.col === col)
+    )
+      outline = "#14c8ea";
+    */
+    // Highlight last move destination
     else if (lastMove && lastMove.to.row === row && lastMove.to.col === col)
       outline = "#6366f1";
+    // Highlight last move origin
     else if (lastMove && lastMove.from.row === row && lastMove.from.col === col)
       outline = "#818cf8";
     return outline || undefined;
   }
+  // Returns overlay type for move history (from/to)
   function isHistoryOverlay(row: number, col: number) {
     if (!history.length) return null;
     const latest = history[history.length - 1];
@@ -343,6 +380,7 @@ const GameBoard: React.FC = () => {
     if (latest.to.row === row && latest.to.col === col) return "to";
     return null;
   }
+  // Jump to a specific move in history
   function jumpToHistory(idx: number) {
     setPieces(history[idx].pieces.map((p) => ({ ...p })));
     setCurrentPlayer(idx % 2 === 0 ? "A" : "B");
@@ -357,6 +395,7 @@ const GameBoard: React.FC = () => {
     setTurnSeconds(0);
   }
 
+  // Show setup screen if game not started
   if (!started || !cornerShape) {
     return (
       <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
@@ -374,6 +413,7 @@ const GameBoard: React.FC = () => {
     );
   }
 
+  // Main game board rendering
   return (
     <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
       <div className="w-full flex flex-col items-center">
@@ -423,16 +463,20 @@ const GameBoard: React.FC = () => {
                 }}
               >
                 {/* ...cell rendering unchanged */}
+                {/* Render board cells. Highlight selected piece and (optionally) valid moves. */}
                 {Array.from({ length: BOARD_SIZE }).map((_, row) =>
                   Array.from({ length: BOARD_SIZE }).map((_, col) => {
+                    // Determine cell color and highlight
                     const color =
                       (row + col) % 2 === 1 ? DARK_SQUARE : LIGHT_SQUARE;
                     const outlineColor = cellOutline(row, col);
                     const histType = isHistoryOverlay(row, col);
                     let highlightBG = "";
+                    // Cyan highlight for valid moves (currently disabled)
                     if (outlineColor === "#14c8ea")
                       highlightBG =
                         "radial-gradient(circle at 55% 60%, #28e0ff99 0%, #f7e0ac33 100%)";
+                    // Yellow highlight for selected piece
                     if (outlineColor === "#facc15")
                       highlightBG =
                         "radial-gradient(circle at 45% 40%, #ffe89399 0%, #a46d4133 100%)";
@@ -454,8 +498,10 @@ const GameBoard: React.FC = () => {
                               : "",
                           cursor: "pointer",
                         }}
+                        // Clicking a cell will select a piece or move to a valid cell
                         onClick={() => handleCellClick(row, col)}
                       >
+                        {/* Outline for selected, valid, or last move cells */}
                         {outlineColor && (
                           <div
                             style={{
@@ -473,6 +519,7 @@ const GameBoard: React.FC = () => {
                             }}
                           />
                         )}
+                        {/* Overlay for move history */}
                         {histType && (
                           <div
                             className="absolute inset-0 rounded"
