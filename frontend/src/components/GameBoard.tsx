@@ -193,7 +193,6 @@ const GameBoard: React.FC = () => {
                   : undefined
               }
               color={COLORS.player.A.primary}
-              isAIThinking={state.isAIThinking && state.aiPlayer === 'A'}
             />
             <div className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none">
               vs
@@ -208,8 +207,21 @@ const GameBoard: React.FC = () => {
                   : undefined
               }
               color={COLORS.player.B.primary}
-              isAIThinking={state.isAIThinking && state.aiPlayer === 'B'}
             />
+          </div>
+
+          {/* AI Thinking Indicator - Fixed height container to prevent layout shifts */}
+          <div className="w-full flex justify-center mb-4" style={{ height: '48px' }}>
+            {state.isAIThinking && (
+              <div className="px-6 py-3 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin h-5 w-5 border-3 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span className="text-blue-700 font-semibold text-lg">
+                    🤖 AI is thinking...
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Board and history sidebar */}
