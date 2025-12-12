@@ -183,44 +183,57 @@ const GameBoard: React.FC = () => {
         >
           {/* Player cards */}
           <div className="w-full flex flex-row mb-3 gap items-center">
-            <PlayerCard
-              label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'A' ? "AI Player" : "Player A"}
-              pieceImg={COLORS.player.A.piece}
-              active={state.currentPlayer === 'A' && state.status === GameStatus.Playing}
-              timer={
-                state.currentPlayer === 'A' && state.status === GameStatus.Playing
-                  ? state.turnSeconds
-                  : undefined
-              }
-              color={COLORS.player.A.primary}
-            />
-            <div className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none flex items-center">
+            <div className="flex items-center gap-2">
+              <PlayerCard
+                label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'A' ? "AI Player" : "Player A"}
+                pieceImg={COLORS.player.A.piece}
+                active={state.currentPlayer === 'A' && state.status === GameStatus.Playing}
+                timer={
+                  state.currentPlayer === 'A' && state.status === GameStatus.Playing
+                    ? state.turnSeconds
+                    : undefined
+                }
+                color={COLORS.player.A.primary}
+              />
+              {state.isAIThinking && state.aiPlayer === 'A' && (
+                <div className="px-3 py-1 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span className="text-blue-700 font-semibold text-xs">
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none">
               vs
             </div>
 
-            {/* AI Thinking Indicator - Vertically aligned with player cards */}
-            {state.isAIThinking && (
-              <div className="px-4 py-2 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-md mx-2">
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span className="text-blue-700 font-semibold text-sm">
-                    🤖 AI is thinking...
-                  </span>
+            <div className="flex items-center gap-2">
+              {state.isAIThinking && state.aiPlayer === 'B' && (
+                <div className="px-3 py-1 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span className="text-blue-700 font-semibold text-xs">
+                      Thinking...
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <PlayerCard
-              label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'B' ? "AI Player" : "Player B"}
-              pieceImg={COLORS.player.B.piece}
-              active={state.currentPlayer === 'B' && state.status === GameStatus.Playing}
-              timer={
-                state.currentPlayer === 'B' && state.status === GameStatus.Playing
-                  ? state.turnSeconds
-                  : undefined
-              }
-              color={COLORS.player.B.primary}
-            />
+              )}
+              <PlayerCard
+                label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'B' ? "AI Player" : "Player B"}
+                pieceImg={COLORS.player.B.piece}
+                active={state.currentPlayer === 'B' && state.status === GameStatus.Playing}
+                timer={
+                  state.currentPlayer === 'B' && state.status === GameStatus.Playing
+                    ? state.turnSeconds
+                    : undefined
+                }
+                color={COLORS.player.B.primary}
+              />
+            </div>
           </div>
 
           {/* Board and history sidebar */}
