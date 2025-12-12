@@ -38,7 +38,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onSelect }) => {
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => setGameMode('human-vs-human')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            className={`px-6 py-3 rounded-lg font-semibold transition-all cursor-pointer ${
               gameMode === 'human-vs-human'
                 ? 'bg-blue-600 text-white shadow-lg scale-105'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -48,7 +48,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onSelect }) => {
           </button>
           <button
             onClick={() => setGameMode('human-vs-ai')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            className={`px-6 py-3 rounded-lg font-semibold transition-all cursor-pointer ${
               gameMode === 'human-vs-ai'
                 ? 'bg-blue-600 text-white shadow-lg scale-105'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -66,7 +66,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onSelect }) => {
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => setAIDifficulty('easy')}
-              className={`px-5 py-2 rounded-lg font-medium transition-all ${
+              className={`px-5 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 aiDifficulty === 'easy'
                   ? 'bg-green-500 text-white shadow-md scale-105'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -76,7 +76,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onSelect }) => {
             </button>
             <button
               onClick={() => setAIDifficulty('medium')}
-              className={`px-5 py-2 rounded-lg font-medium transition-all ${
+              className={`px-5 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 aiDifficulty === 'medium'
                   ? 'bg-yellow-500 text-white shadow-md scale-105'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -86,7 +86,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onSelect }) => {
             </button>
             <button
               onClick={() => setAIDifficulty('hard')}
-              className={`px-5 py-2 rounded-lg font-medium transition-all ${
+              className={`px-5 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 aiDifficulty === 'hard'
                   ? 'bg-red-500 text-white shadow-md scale-105'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -110,7 +110,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onSelect }) => {
       <button
         onClick={handleStart}
         disabled={!selectedShape}
-        className={`mt-8 px-8 py-4 rounded-lg text-lg font-bold transition-all ${
+        className={`mt-8 px-8 py-4 rounded-lg text-lg font-bold transition-all cursor-pointer ${
           selectedShape
             ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl'
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
