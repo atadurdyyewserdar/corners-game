@@ -5,6 +5,7 @@
 import type { PieceWithId, Position } from './Position';
 import type { PlayerType } from './Player';
 import type { CornerShape } from '../../constants/gameConfig';
+import type { GameMode, AIDifficulty } from './AI';
 
 export type GameStatus = 'setup' | 'playing' | 'finished';
 
@@ -22,6 +23,9 @@ export interface MoveEntry {
 
 export interface GameState {
   status: GameStatus;
+  gameMode: GameMode;
+  aiDifficulty: AIDifficulty | null;
+  aiPlayer: PlayerType | null; // Which player is AI (null if human vs human)
   cornerShape: CornerShape | null;
   pieces: PieceWithId[];
   currentPlayer: PlayerType;
@@ -34,10 +38,14 @@ export interface GameState {
   turnSeconds: number;
   history: MoveEntry[];
   isAnimating: boolean;
+  isAIThinking: boolean;
 }
 
 export const initialGameState: GameState = {
   status: GameStatus.Setup,
+  gameMode: 'human-vs-human',
+  aiDifficulty: null,
+  aiPlayer: null,
   cornerShape: null,
   pieces: [],
   currentPlayer: 'A',
@@ -47,4 +55,5 @@ export const initialGameState: GameState = {
   turnSeconds: 0,
   history: [],
   isAnimating: false,
+  isAIThinking: false,
 };
