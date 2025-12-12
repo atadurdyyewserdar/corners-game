@@ -2,7 +2,7 @@
  * History sidebar component - shows move history
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import type { MoveEntry } from '../domain/models/GameState';
 import type { CornerShape } from '../constants/gameConfig';
 import { cornerShapeLabel } from './CornerConfig';
@@ -14,6 +14,7 @@ interface HistorySidebarProps {
   cornerShape: CornerShape;
   gameStatus: GameStatus;
   onJumpToHistory: (index: number) => void;
+  gameSeconds: number;
 }
 
 const HistorySidebar: React.FC<HistorySidebarProps> = ({
@@ -21,7 +22,16 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
   cornerShape,
   gameStatus,
   onJumpToHistory,
+  gameSeconds,
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history]);
+
   const isGameFinished = gameStatus === GameStatus.Finished;
 
   return (
@@ -39,9 +49,17 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
           ({cornerShapeLabel(cornerShape)})
         </span>
       </div>
+      <div className="w-full mb-2 text-center">
+        <div className="inline-block bg-[#f0f0f0] border border-gray-300 rounded px-2 py-1">
+          <span className="text-sm font-mono font-bold text-[#7e511d]">
+            {Math.floor(gameSeconds / 60)}:{(gameSeconds % 60).toString().padStart(2, '0')}
+          </span>
+        </div>
+      </div>
       <div
         className="overflow-y-auto w-full"
-        style={{ maxHeight: BOARD.size * BOARD.cellSize - 45 }}
+        style={{ maxHeight: BOARD.size * BOARD.cellSize - 80 }}
+        ref={scrollRef}
       >
         {history.map((item, idx) => (
           <button

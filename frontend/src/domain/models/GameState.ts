@@ -35,7 +35,7 @@ export interface GameState {
     to: Position;
   } | null;
   winner: PlayerType | null;
-  turnSeconds: number;
+  gameSeconds: number;
   history: MoveEntry[];
   isAnimating: boolean;
   isAIThinking: boolean;
@@ -53,7 +53,7 @@ export const initialGameState: GameState = {
   selectedPiece: null,
   lastMove: null,
   winner: null,
-  turnSeconds: 0,
+  gameSeconds: 0,
   history: [],
   isAnimating: false,
   isAIThinking: false,

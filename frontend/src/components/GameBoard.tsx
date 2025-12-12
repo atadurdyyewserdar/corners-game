@@ -188,11 +188,6 @@ const GameBoard: React.FC = () => {
                 label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'A' ? "AI Player" : "Player A"}
                 pieceImg={COLORS.player.A.piece}
                 active={state.currentPlayer === 'A' && state.status === GameStatus.Playing}
-                timer={
-                  state.currentPlayer === 'A' && state.status === GameStatus.Playing
-                    ? state.turnSeconds
-                    : undefined
-                }
                 color={COLORS.player.A.primary}
               />
               {state.isAIThinking && state.aiPlayer === 'A' && (
@@ -216,11 +211,6 @@ const GameBoard: React.FC = () => {
                 label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'B' ? "AI Player" : "Player B"}
                 pieceImg={COLORS.player.B.piece}
                 active={state.currentPlayer === 'B' && state.status === GameStatus.Playing}
-                timer={
-                  state.currentPlayer === 'B' && state.status === GameStatus.Playing
-                    ? state.turnSeconds
-                    : undefined
-                }
                 color={COLORS.player.B.primary}
               />
               {state.isAIThinking && state.aiPlayer === 'B' && (
@@ -252,6 +242,7 @@ const GameBoard: React.FC = () => {
               cornerShape={state.cornerShape}
               gameStatus={state.status}
               onJumpToHistory={handleJumpToHistory}
+              gameSeconds={state.gameSeconds}
             />
           </div>
 

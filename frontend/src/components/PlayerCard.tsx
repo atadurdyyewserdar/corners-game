@@ -1,12 +1,11 @@
 import React from "react";
-import { COLORS, SHADOWS } from "../constants/theme";
+import { COLORS } from "../constants/theme";
 import { LAYOUT } from "../constants/dimensions";
 
 interface PlayerCardProps {
   label: string;
   pieceImg: string;
   active: boolean;
-  timer?: number;
   color?: string;
 }
 
@@ -14,7 +13,6 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   label,
   pieceImg,
   active,
-  timer,
   color,
 }) => (
   <div
@@ -42,20 +40,6 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
     >
       {label}
     </span>
-    {active && timer !== undefined && (
-      <span
-        className="absolute -top-6 right-1 text-xs font-bold rounded-sm px-2 py-px"
-        style={{
-          backgroundColor: COLORS.ui.timer.bg,
-          color: COLORS.ui.timer.text,
-          boxShadow: SHADOWS.timer,
-          fontSize: 13,
-          letterSpacing: 1.2,
-        }}
-      >
-        {timer}s
-      </span>
-    )}
   </div>
 );
 

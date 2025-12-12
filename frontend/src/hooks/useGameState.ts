@@ -150,20 +150,20 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         lastMove: targetEntry.from && targetEntry.to
           ? { from: targetEntry.from, to: targetEntry.to }
           : null,
-        turnSeconds: 0,
+        gameSeconds: 0,
       };
     }
 
     case 'INCREMENT_TIMER':
       return {
         ...state,
-        turnSeconds: state.turnSeconds + 1,
+        gameSeconds: state.gameSeconds + 1,
       };
 
     case 'RESET_TIMER':
       return {
         ...state,
-        turnSeconds: 0,
+        gameSeconds: 0,
       };
 
     default:
