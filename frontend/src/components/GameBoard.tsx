@@ -182,7 +182,7 @@ const GameBoard: React.FC = () => {
           style={{ width: COMPUTED.wrapperWidth, minWidth: COMPUTED.wrapperWidth }}
         >
           {/* Player cards */}
-          <div className="w-full flex flex-row mb-3 gap">
+          <div className="w-full flex flex-row mb-3 gap items-center">
             <PlayerCard
               label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'A' ? "AI Player" : "Player A"}
               pieceImg={COLORS.player.A.piece}
@@ -194,9 +194,22 @@ const GameBoard: React.FC = () => {
               }
               color={COLORS.player.A.primary}
             />
-            <div className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none">
+            <div className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none flex items-center">
               vs
             </div>
+
+            {/* AI Thinking Indicator - Vertically aligned with player cards */}
+            {state.isAIThinking && (
+              <div className="px-4 py-2 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-md mx-2">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span className="text-blue-700 font-semibold text-sm">
+                    🤖 AI is thinking...
+                  </span>
+                </div>
+              </div>
+            )}
+
             <PlayerCard
               label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'B' ? "AI Player" : "Player B"}
               pieceImg={COLORS.player.B.piece}
@@ -208,20 +221,6 @@ const GameBoard: React.FC = () => {
               }
               color={COLORS.player.B.primary}
             />
-          </div>
-
-          {/* AI Thinking Indicator - Fixed height container to prevent layout shifts */}
-          <div className="w-full flex justify-center mb-4" style={{ height: '48px' }}>
-            {state.isAIThinking && (
-              <div className="px-6 py-3 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin h-5 w-5 border-3 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span className="text-blue-700 font-semibold text-lg">
-                    🤖 AI is thinking...
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Board and history sidebar */}
