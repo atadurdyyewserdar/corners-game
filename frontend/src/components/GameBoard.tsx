@@ -212,16 +212,6 @@ const GameBoard: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {state.isAIThinking && state.aiPlayer === 'B' && (
-                <div className="px-3 py-1 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                    <span className="text-blue-700 font-semibold text-xs">
-                      Thinking...
-                    </span>
-                  </div>
-                </div>
-              )}
               <PlayerCard
                 label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'B' ? "AI Player" : "Player B"}
                 pieceImg={COLORS.player.B.piece}
@@ -233,6 +223,16 @@ const GameBoard: React.FC = () => {
                 }
                 color={COLORS.player.B.primary}
               />
+              {state.isAIThinking && state.aiPlayer === 'B' && (
+                <div className="px-3 py-1 bg-blue-100 border-2 border-blue-400 rounded-lg shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <span className="text-blue-700 font-semibold text-xs">
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
