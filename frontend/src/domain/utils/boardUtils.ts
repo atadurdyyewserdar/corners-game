@@ -103,6 +103,37 @@ export function getBoardFromPieces(pieces: PieceWithId[]): Board {
 }
 
 /**
+ * Alias for getBoardFromPieces (for consistency with AI code)
+ */
+export const createBoardFromPieces = getBoardFromPieces;
+
+/**
+ * Gets the goal corner positions for a player
+ */
+export function getGoalCornerPositions(player: PlayerType): Array<{ row: number; col: number }> {
+  const boardSize = GAME_CONFIG.boardSize;
+  const positions: Array<{ row: number; col: number }> = [];
+  
+  if (player === 'A') {
+    // Player A's goal is bottom-right corner (where B starts)
+    for (let row = boardSize - 3; row < boardSize; row++) {
+      for (let col = boardSize - 3; col < boardSize; col++) {
+        positions.push({ row, col });
+      }
+    }
+  } else {
+    // Player B's goal is top-left corner (where A starts)
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        positions.push({ row, col });
+      }
+    }
+  }
+  
+  return positions;
+}
+
+/**
  * Finds a piece at a specific position
  */
 export function findPieceAt(
