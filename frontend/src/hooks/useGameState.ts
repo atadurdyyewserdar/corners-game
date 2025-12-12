@@ -21,6 +21,7 @@ type GameAction =
   | { type: 'SET_ANIMATING'; isAnimating: boolean }
   | { type: 'SET_AI_THINKING'; isThinking: boolean }
   | { type: 'SET_PENDING_AI_MOVE'; move: { piece: PieceWithId; from: Position; to: Position } | null }
+  | { type: 'SET_EVALUATION'; score: number }
   | { type: 'UPDATE_PIECES'; pieces: PieceWithId[] }
   | { type: 'END_TURN' }
   | { type: 'SET_WINNER'; winner: PlayerType }
@@ -95,6 +96,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         pendingAIMove: action.move,
+      };
+
+    case 'SET_EVALUATION':
+      return {
+        ...state,
+        evaluationScore: action.score,
       };
 
     case 'UPDATE_PIECES':
@@ -173,7 +180,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 export function useGameState() {
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
   const isAITurnInProgress = useRef(false);
-  const { initializeWorker, computeMove, clearCache } = useAIWorker();
+  const { initializeWorker, computeMove, evaluatePosition, clearCache } = useAIWorker();
 
   // Initialize AI worker when game starts with AI mode
   useEffect(() => {
@@ -183,6 +190,19 @@ export function useGameState() {
       });
     }
   }, [state.gameMode, state.aiDifficulty, initializeWorker]);
+
+  // Evaluate position after each move
+  useEffect(() => {
+    if (state.status === GameStatus.Playing && state.pieces.length > 0) {
+      evaluatePosition(state.pieces, state.currentPlayer)
+        .then((score) => {
+          dispatch({ type: 'SET_EVALUATION', score });
+        })
+        .catch((error) => {
+          console.error('Position evaluation failed:', error);
+        });
+    }
+  }, [state.pieces, state.currentPlayer, state.status, evaluatePosition]);
 
   // Trigger AI move when it's AI's turn
   useEffect(() => {

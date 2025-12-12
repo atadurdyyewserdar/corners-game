@@ -10,6 +10,7 @@ import HistorySidebar from './HistorySidebar';
 import GameControls from './GameControls';
 import WinnerBanner from './WinnerBanner';
 import GameSetup from './GameSetup';
+import { EvaluationBar } from './EvaluationBar';
 import { useGameState } from '../hooks/useGameState';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { usePieceAnimation } from '../hooks/usePieceAnimation';
@@ -226,11 +227,16 @@ const GameBoard: React.FC = () => {
             </div>
           </div>
 
-          {/* Board and history sidebar */}
+          {/* Board, evaluation bar, and history sidebar */}
           <div
-            className="flex flex-row items-start mx-auto"
+            className="flex flex-row items-start mx-auto gap-4"
             style={{ minWidth: COMPUTED.wrapperWidth }}
           >
+            {/* Evaluation Bar */}
+            {state.status === GameStatus.Playing && (
+              <EvaluationBar score={state.evaluationScore} />
+            )}
+
             <Board
               pieces={state.pieces}
               selectedPiece={state.selectedPiece}

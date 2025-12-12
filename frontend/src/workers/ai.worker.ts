@@ -5,6 +5,7 @@
 
 import { AIPlayer } from '../domain/ai/AIPlayer';
 import { createBoardFromPieces } from '../domain/utils/boardUtils';
+import { evaluatePosition } from '../domain/ai/evaluation';
 import { AI_DIFFICULTY_CONFIG } from '../domain/models/AI';
 import type { PieceWithId } from '../domain/models/Position';
 import type { PlayerType } from '../domain/models/Player';
@@ -24,6 +25,11 @@ export type AIWorkerRequest =
       pieces: PieceWithId[];
       currentPlayer: PlayerType;
       cornerShape: CornerShape;
+    }
+  | { 
+      type: 'evaluate'; 
+      pieces: PieceWithId[];
+      currentPlayer: PlayerType;
     }
   | { 
       type: 'clearCache'; 
@@ -46,6 +52,10 @@ export type AIWorkerResponse =
       type: 'moveComputed'; 
       move: AIMove | null;
       computationTime: number;
+    }
+  | { 
+      type: 'evaluated'; 
+      score: number;
     }
   | { 
       type: 'cacheCleared';
@@ -103,6 +113,24 @@ self.onmessage = async (event: MessageEvent<AIWorkerRequest>) => {
           type: 'moveComputed', 
           move,
           computationTime 
+        });
+        break;
+      }
+
+      case 'evaluate': {
+        // Create board from pieces
+        const board = createBoardFromPieces(message.pieces);
+        
+        // Evaluate position for current player
+        const score = evaluatePosition(
+          board,
+          message.pieces,
+          message.currentPlayer
+        );
+
+        postResponse({ 
+          type: 'evaluated', 
+          score 
         });
         break;
       }

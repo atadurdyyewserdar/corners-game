@@ -17,6 +17,10 @@ interface UseAIWorkerReturn {
     currentPlayer: PlayerType,
     cornerShape: CornerShape
   ) => Promise<AIMove | null>;
+  evaluatePosition: (
+    pieces: PieceWithId[],
+    currentPlayer: PlayerType
+  ) => Promise<number>;
   clearCache: () => void;
   isComputing: boolean;
   lastComputationTime: number | null;
@@ -32,6 +36,10 @@ export function useAIWorker(): UseAIWorkerReturn {
   const lastComputationTimeRef = useRef<number | null>(null);
   const pendingPromiseRef = useRef<{
     resolve: (move: AIMove | null) => void;
+    reject: (error: Error) => void;
+  } | null>(null);
+  const pendingEvaluationRef = useRef<{
+    resolve: (score: number) => void;
     reject: (error: Error) => void;
   } | null>(null);
 
@@ -133,6 +141,33 @@ export function useAIWorker(): UseAIWorkerReturn {
   );
 
   /**
+   * Evaluate current position and return a score
+   * Positive score = advantage for current player
+   */
+  const evaluatePosition = useCallback(
+    async (
+      pieces: PieceWithId[],
+      currentPlayer: PlayerType
+    ): Promise<number> => {
+      if (!workerRef.current) {
+        // If worker not ready, return neutral score
+        return 0;
+      }
+
+      return new Promise((resolve, reject) => {
+        pendingEvaluationRef.current = { resolve, reject };
+
+        workerRef.current!.postMessage({
+          type: 'evaluate',
+          pieces,
+          currentPlayer
+        } as AIWorkerRequest);
+      });
+    },
+    []
+  );
+
+  /**
    * Clear the AI's transposition table cache
    */
   const clearCache = useCallback(() => {
@@ -159,6 +194,13 @@ export function useAIWorker(): UseAIWorkerReturn {
         if (pendingPromiseRef.current) {
           pendingPromiseRef.current.resolve(response.move);
           pendingPromiseRef.current = null;
+        }
+        break;
+
+      case 'evaluated':
+        if (pendingEvaluationRef.current) {
+          pendingEvaluationRef.current.resolve(response.score);
+          pendingEvaluationRef.current = null;
         }
         break;
 
@@ -202,6 +244,7 @@ export function useAIWorker(): UseAIWorkerReturn {
   return {
     initializeWorker,
     computeMove,
+    evaluatePosition,
     clearCache,
     isComputing: isComputingRef.current,
     lastComputationTime: lastComputationTimeRef.current,
