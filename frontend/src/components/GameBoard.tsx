@@ -39,7 +39,11 @@ const GameBoard: React.FC = () => {
    */
   const handleCellClick = useCallback(
     (row: number, col: number) => {
-      if (state.status !== GameStatus.Playing || isAnimating) return;
+      // Prevent interaction during animation, AI turn, or game not playing
+      if (state.status !== GameStatus.Playing || isAnimating || state.isAIThinking) return;
+      
+      // Prevent human from moving AI's pieces
+      if (state.currentPlayer === state.aiPlayer) return;
 
       const clickedPiece = findPieceAt(state.pieces, row, col);
 
@@ -93,6 +97,8 @@ const GameBoard: React.FC = () => {
       state.selectedPiece,
       state.pieces,
       state.currentPlayer,
+      state.aiPlayer,
+      state.isAIThinking,
       isAnimating,
       board,
       actions,
@@ -125,11 +131,11 @@ const GameBoard: React.FC = () => {
   );
 
   /**
-   * Handles starting a new game with selected corner shape
+   * Handles starting a new game with selected corner shape and game mode
    */
   const handleStartGame = useCallback(
-    (cornerShape: CornerShape) => {
-      actions.startGame(cornerShape);
+    (cornerShape: CornerShape, gameMode: import('../domain/models/AI').GameMode, aiDifficulty: import('../domain/models/AI').AIDifficulty | null) => {
+      actions.startGame(cornerShape, gameMode, aiDifficulty);
     },
     [actions]
   );
@@ -150,7 +156,7 @@ const GameBoard: React.FC = () => {
           {/* Player cards */}
           <div className="w-full flex flex-row mb-3 gap">
             <PlayerCard
-              label="Player A"
+              label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'A' ? "AI Player" : "Player A"}
               pieceImg={COLORS.player.A.piece}
               active={state.currentPlayer === 'A' && state.status === GameStatus.Playing}
               timer={
@@ -164,7 +170,7 @@ const GameBoard: React.FC = () => {
               vs
             </div>
             <PlayerCard
-              label="Player B"
+              label={state.gameMode === 'human-vs-ai' && state.aiPlayer === 'B' ? "AI Player" : "Player B"}
               pieceImg={COLORS.player.B.piece}
               active={state.currentPlayer === 'B' && state.status === GameStatus.Playing}
               timer={
@@ -175,6 +181,18 @@ const GameBoard: React.FC = () => {
               color={COLORS.player.B.primary}
             />
           </div>
+
+          {/* AI Thinking Indicator */}
+          {state.isAIThinking && (
+            <div className="mb-4 px-6 py-3 bg-blue-100 border-2 border-blue-400 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin h-5 w-5 border-3 border-blue-500 border-t-transparent rounded-full"></div>
+                <span className="text-blue-700 font-semibold">
+                  🤖 AI is thinking...
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Board and history sidebar */}
           <div
