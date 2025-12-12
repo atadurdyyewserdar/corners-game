@@ -10,10 +10,9 @@ import type { CornerShape } from '../constants/gameConfig';
 import type { GameMode, AIDifficulty } from '../domain/models/AI';
 import { GameStatus, initialGameState } from '../domain/models/GameState';
 import { getOpponent } from '../domain/models/Player';
-import { createInitialPieces, clonePieces, movePiece, createBoardFromPieces } from '../domain/utils/boardUtils';
+import { createInitialPieces, clonePieces, movePiece } from '../domain/utils/boardUtils';
 import { hasPlayerWon } from '../domain/utils/winCondition';
-import { AIPlayer } from '../domain/ai/AIPlayer';
-import { AI_DIFFICULTY_CONFIG } from '../domain/models/AI';
+import { useAIWorker } from './useAIWorker';
 
 type GameAction =
   | { type: 'START_GAME'; cornerShape: CornerShape; gameMode: GameMode; aiDifficulty: AIDifficulty | null }
@@ -173,16 +172,17 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
 export function useGameState() {
   const [state, dispatch] = useReducer(gameReducer, initialGameState);
-  const aiPlayerRef = useRef<AIPlayer | null>(null);
   const isAITurnInProgress = useRef(false);
+  const { initializeWorker, computeMove, clearCache } = useAIWorker();
 
-  // Initialize AI player when game starts with AI mode
+  // Initialize AI worker when game starts with AI mode
   useEffect(() => {
-    if (state.gameMode === 'human-vs-ai' && state.aiDifficulty && !aiPlayerRef.current) {
-      const config = AI_DIFFICULTY_CONFIG[state.aiDifficulty];
-      aiPlayerRef.current = new AIPlayer(config);
+    if (state.gameMode === 'human-vs-ai' && state.aiDifficulty) {
+      initializeWorker(state.aiDifficulty).catch((error) => {
+        console.error('Failed to initialize AI worker:', error);
+      });
     }
-  }, [state.gameMode, state.aiDifficulty]);
+  }, [state.gameMode, state.aiDifficulty, initializeWorker]);
 
   // Trigger AI move when it's AI's turn
   useEffect(() => {
@@ -195,51 +195,43 @@ export function useGameState() {
       !isAITurnInProgress.current &&
       !state.pendingAIMove;
 
-    if (shouldAIMove && aiPlayerRef.current && state.cornerShape) {
+    if (shouldAIMove && state.cornerShape) {
       isAITurnInProgress.current = true;
       dispatch({ type: 'SET_AI_THINKING', isThinking: true });
 
-      // Use setTimeout to allow UI to update before heavy computation
-      setTimeout(() => {
-        if (!aiPlayerRef.current || !state.cornerShape) {
+      // Compute AI move in Web Worker (non-blocking)
+      computeMove(state.pieces, state.currentPlayer, state.cornerShape)
+        .then((aiMove) => {
           dispatch({ type: 'SET_AI_THINKING', isThinking: false });
-          isAITurnInProgress.current = false;
-          return;
-        }
 
-        const board = createBoardFromPieces(state.pieces);
-        const aiMove = aiPlayerRef.current.findBestMove(
-          board,
-          state.pieces,
-          state.currentPlayer,
-          state.cornerShape
-        );
+          if (aiMove) {
+            // Find the piece that needs to move
+            const pieceToMove = state.pieces.find(
+              p => p.row === aiMove.from.row && p.col === aiMove.from.col
+            );
 
-        dispatch({ type: 'SET_AI_THINKING', isThinking: false });
-
-        if (aiMove) {
-          // Find the piece that needs to move
-          const pieceToMove = state.pieces.find(
-            p => p.row === aiMove.from.row && p.col === aiMove.from.col
-          );
-
-          if (pieceToMove) {
-            // Set pending AI move for GameBoard to animate
-            dispatch({ 
-              type: 'SET_PENDING_AI_MOVE', 
-              move: {
-                piece: pieceToMove,
-                from: aiMove.from,
-                to: aiMove.to
-              }
-            });
+            if (pieceToMove) {
+              // Set pending AI move for GameBoard to animate
+              dispatch({ 
+                type: 'SET_PENDING_AI_MOVE', 
+                move: {
+                  piece: pieceToMove,
+                  from: aiMove.from,
+                  to: aiMove.to
+                }
+              });
+            } else {
+              isAITurnInProgress.current = false;
+            }
           } else {
             isAITurnInProgress.current = false;
           }
-        } else {
+        })
+        .catch((error) => {
+          console.error('AI move computation failed:', error);
+          dispatch({ type: 'SET_AI_THINKING', isThinking: false });
           isAITurnInProgress.current = false;
-        }
-      }, 300); // Increased delay to prevent UI freeze
+        });
     }
   }, [
     state.status,
@@ -254,15 +246,12 @@ export function useGameState() {
   ]);
 
   const startGame = useCallback((cornerShape: CornerShape, gameMode: GameMode, aiDifficulty: AIDifficulty | null) => {
-    // Clear old AI instance
-    if (aiPlayerRef.current) {
-      aiPlayerRef.current.clearCache();
-      aiPlayerRef.current = null;
-    }
+    // Clear AI worker cache when starting new game
+    clearCache();
     isAITurnInProgress.current = false;
     
     dispatch({ type: 'START_GAME', cornerShape, gameMode, aiDifficulty });
-  }, []);
+  }, [clearCache]);
 
   const selectPiece = useCallback((piece: PieceWithId | null) => {
     dispatch({ type: 'SELECT_PIECE', piece });
@@ -300,15 +289,10 @@ export function useGameState() {
   }, []);
 
   const resetGame = useCallback((keepShape = false) => {
-    if (aiPlayerRef.current) {
-      aiPlayerRef.current.clearCache();
-      if (keepShape) {
-        aiPlayerRef.current = null;
-      }
-    }
+    clearCache();
     isAITurnInProgress.current = false;
     dispatch({ type: 'RESET_GAME', keepShape });
-  }, []);
+  }, [clearCache]);
 
   const jumpToHistory = useCallback((index: number) => {
     dispatch({ type: 'JUMP_TO_HISTORY', index });
