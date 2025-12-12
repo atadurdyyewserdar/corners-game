@@ -1,9 +1,11 @@
 /**
  * Custom hook for managing game timer using Web Worker
  * Uses a separate thread for accurate timing even during heavy computation
+ * Forces React re-renders using flushSync for immediate updates
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { GameStatus } from '../domain/models/GameState';
 import { GAME_CONFIG } from '../constants/gameConfig';
 import type { TimerMessage, TimerResponse } from '../workers/timer.worker';
@@ -66,10 +68,14 @@ export function useGameTimer({ status, onTick }: UseGameTimerProps) {
     try {
       workerRef.current = new Worker(workerUrl);
       
-      // Set up message handler
+      // Set up message handler with flushSync to force immediate React updates
       workerRef.current.onmessage = (event: MessageEvent<TimerResponse>) => {
         if (event.data.type === 'tick') {
-          onTickRef.current();
+          // Use flushSync to force synchronous React update
+          // This ensures the timer updates even during heavy computation
+          flushSync(() => {
+            onTickRef.current();
+          });
         }
       };
 
@@ -100,7 +106,9 @@ export function useGameTimer({ status, onTick }: UseGameTimerProps) {
       // Fallback to setInterval if worker not available
       if (status === GameStatus.Playing) {
         const intervalId = setInterval(() => {
-          onTickRef.current();
+          flushSync(() => {
+            onTickRef.current();
+          });
         }, GAME_CONFIG.timerInterval);
 
         return () => clearInterval(intervalId);
