@@ -8,6 +8,7 @@ interface PlayerCardProps {
   active: boolean;
   timer?: number;
   color?: string;
+  isAIThinking?: boolean;
 }
 
 const PlayerCard: React.FC<PlayerCardProps> = ({
@@ -16,6 +17,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   active,
   timer,
   color,
+  isAIThinking = false,
 }) => (
   <div
     className="flex flex-col items-center px-3 py-1 rounded select-none bg-white"
@@ -56,6 +58,15 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         {timer}s
       </span>
     )}
+    {/* AI Thinking Indicator - Fixed height to prevent layout shift */}
+    <div style={{ height: '20px', marginTop: '4px' }}>
+      {isAIThinking && active && (
+        <div className="flex items-center gap-1">
+          <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+          <span className="text-blue-600 font-semibold text-xs">Thinking...</span>
+        </div>
+      )}
+    </div>
   </div>
 );
 

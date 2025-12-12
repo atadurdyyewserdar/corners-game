@@ -3,7 +3,7 @@
  * Refactored to use clean architecture with separated concerns
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import PlayerCard from './PlayerCard';
 import Board from './Board';
 import HistorySidebar from './HistorySidebar';
@@ -33,6 +33,34 @@ const GameBoard: React.FC = () => {
 
   // Get board matrix from pieces
   const board = getBoardFromPieces(state.pieces);
+
+  // Handle AI moves with animation
+  useEffect(() => {
+    if (state.pendingAIMove && !isAnimating) {
+      const { piece, to } = state.pendingAIMove;
+      
+      // Find jump path for the AI move
+      const path = findJumpPath(board, piece, to);
+      
+      // Animate the move
+      animatePieceStepwise(
+        piece,
+        path,
+        state.pieces,
+        actions.updatePieces
+      ).then(() => {
+        // After animation, make the move and check for winner
+        const hasWinner = actions.makeMove(piece.id, to, path);
+        
+        // Clear the pending AI move
+        actions.clearPendingAIMove();
+        
+        if (!hasWinner) {
+          // Continue game - turn will be ended by makeMove
+        }
+      });
+    }
+  }, [state.pendingAIMove, isAnimating, board, state.pieces, actions, animatePieceStepwise]);
 
   /**
    * Handles cell click - either selects a piece or moves a selected piece
@@ -165,6 +193,7 @@ const GameBoard: React.FC = () => {
                   : undefined
               }
               color={COLORS.player.A.primary}
+              isAIThinking={state.isAIThinking && state.aiPlayer === 'A'}
             />
             <div className="text-[#7e511d] text-lg font-bold font-serif px-4 select-none">
               vs
@@ -179,20 +208,9 @@ const GameBoard: React.FC = () => {
                   : undefined
               }
               color={COLORS.player.B.primary}
+              isAIThinking={state.isAIThinking && state.aiPlayer === 'B'}
             />
           </div>
-
-          {/* AI Thinking Indicator */}
-          {state.isAIThinking && (
-            <div className="mb-4 px-6 py-3 bg-blue-100 border-2 border-blue-400 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="animate-spin h-5 w-5 border-3 border-blue-500 border-t-transparent rounded-full"></div>
-                <span className="text-blue-700 font-semibold">
-                  🤖 AI is thinking...
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Board and history sidebar */}
           <div

@@ -39,6 +39,7 @@ export interface GameState {
   history: MoveEntry[];
   isAnimating: boolean;
   isAIThinking: boolean;
+  pendingAIMove: { piece: PieceWithId; from: Position; to: Position } | null;
 }
 
 export const initialGameState: GameState = {
@@ -56,4 +57,5 @@ export const initialGameState: GameState = {
   history: [],
   isAnimating: false,
   isAIThinking: false,
+  pendingAIMove: null,
 };

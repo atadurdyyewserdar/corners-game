@@ -21,6 +21,7 @@ type GameAction =
   | { type: 'MOVE_PIECE'; pieceId: string; to: Position; path: Position[] }
   | { type: 'SET_ANIMATING'; isAnimating: boolean }
   | { type: 'SET_AI_THINKING'; isThinking: boolean }
+  | { type: 'SET_PENDING_AI_MOVE'; move: { piece: PieceWithId; from: Position; to: Position } | null }
   | { type: 'UPDATE_PIECES'; pieces: PieceWithId[] }
   | { type: 'END_TURN' }
   | { type: 'SET_WINNER'; winner: PlayerType }
@@ -89,6 +90,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         isAIThinking: action.isThinking,
+      };
+
+    case 'SET_PENDING_AI_MOVE':
+      return {
+        ...state,
+        pendingAIMove: action.move,
       };
 
     case 'UPDATE_PIECES':
@@ -186,7 +193,8 @@ export function useGameState() {
       state.currentPlayer === state.aiPlayer &&
       !state.isAnimating &&
       !state.isAIThinking &&
-      !isAITurnInProgress.current;
+      !isAITurnInProgress.current &&
+      !state.pendingAIMove;
 
     if (shouldAIMove && aiPlayerRef.current && state.cornerShape) {
       isAITurnInProgress.current = true;
@@ -194,7 +202,11 @@ export function useGameState() {
 
       // Use setTimeout to allow UI to update before heavy computation
       setTimeout(() => {
-        if (!aiPlayerRef.current || !state.cornerShape) return;
+        if (!aiPlayerRef.current || !state.cornerShape) {
+          dispatch({ type: 'SET_AI_THINKING', isThinking: false });
+          isAITurnInProgress.current = false;
+          return;
+        }
 
         const board = createBoardFromPieces(state.pieces);
         const aiMove = aiPlayerRef.current.findBestMove(
@@ -204,6 +216,8 @@ export function useGameState() {
           state.cornerShape
         );
 
+        dispatch({ type: 'SET_AI_THINKING', isThinking: false });
+
         if (aiMove) {
           // Find the piece that needs to move
           const pieceToMove = state.pieces.find(
@@ -211,28 +225,22 @@ export function useGameState() {
           );
 
           if (pieceToMove) {
-            // Create path for animation
-            const path: Position[] = [
-              { row: aiMove.from.row, col: aiMove.from.col },
-              { row: aiMove.to.row, col: aiMove.to.col },
-            ];
-
-            // Execute the move
-            dispatch({ type: 'MOVE_PIECE', pieceId: pieceToMove.id, to: aiMove.to, path });
-
-            // Check for win
-            const updatedPieces = movePiece(state.pieces, pieceToMove.id, aiMove.to.row, aiMove.to.col);
-            if (state.cornerShape && hasPlayerWon(updatedPieces, state.currentPlayer, state.cornerShape)) {
-              dispatch({ type: 'SET_WINNER', winner: state.currentPlayer });
-            } else {
-              dispatch({ type: 'END_TURN' });
-            }
+            // Set pending AI move for GameBoard to animate
+            dispatch({ 
+              type: 'SET_PENDING_AI_MOVE', 
+              move: {
+                piece: pieceToMove,
+                from: aiMove.from,
+                to: aiMove.to
+              }
+            });
+          } else {
+            isAITurnInProgress.current = false;
           }
+        } else {
+          isAITurnInProgress.current = false;
         }
-
-        dispatch({ type: 'SET_AI_THINKING', isThinking: false });
-        isAITurnInProgress.current = false;
-      }, 100);
+      }, 300); // Increased delay to prevent UI freeze
     }
   }, [
     state.status,
@@ -243,6 +251,7 @@ export function useGameState() {
     state.isAIThinking,
     state.pieces,
     state.cornerShape,
+    state.pendingAIMove,
   ]);
 
   const startGame = useCallback((cornerShape: CornerShape, gameMode: GameMode, aiDifficulty: AIDifficulty | null) => {
@@ -314,6 +323,11 @@ export function useGameState() {
     dispatch({ type: 'RESET_TIMER' });
   }, []);
 
+  const clearPendingAIMove = useCallback(() => {
+    dispatch({ type: 'SET_PENDING_AI_MOVE', move: null });
+    isAITurnInProgress.current = false;
+  }, []);
+
   return {
     state,
     actions: {
@@ -327,6 +341,7 @@ export function useGameState() {
       jumpToHistory,
       incrementTimer,
       resetTimer,
+      clearPendingAIMove,
     },
   };
 }
