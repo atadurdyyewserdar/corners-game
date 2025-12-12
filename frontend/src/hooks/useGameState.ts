@@ -109,7 +109,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         currentPlayer: getOpponent(state.currentPlayer),
         selectedPiece: null,
-        turnSeconds: 0,
       };
 
     case 'SET_WINNER':
