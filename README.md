@@ -4,7 +4,7 @@ A modern, professionally architected web-based strategic board game where two pl
 
 # Demo
 
-corners-game-qn4csj0mu-serdars-projects-39bf45aa.vercel.app
+https://corners-game-qn4csj0mu-serdars-projects-39bf45aa.vercel.app
 
 ## Overview
 
