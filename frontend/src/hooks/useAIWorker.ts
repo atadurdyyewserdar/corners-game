@@ -3,7 +3,7 @@
  * Handles worker lifecycle, message passing, and computation requests
  */
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import type { AIWorkerRequest, AIWorkerResponse } from '../workers/ai.worker';
 import type { AIDifficulty, AIMove } from '../domain/models/AI';
 import type { PieceWithId } from '../domain/models/Position';
@@ -32,8 +32,8 @@ interface UseAIWorkerReturn {
  */
 export function useAIWorker(): UseAIWorkerReturn {
   const workerRef = useRef<Worker | null>(null);
-  const isComputingRef = useRef(false);
-  const lastComputationTimeRef = useRef<number | null>(null);
+  const [isComputing, setIsComputing] = useState(false);
+  const [lastComputationTime, setLastComputationTime] = useState<number | null>(null);
   const pendingPromiseRef = useRef<{
     resolve: (move: AIMove | null) => void;
     reject: (error: Error) => void;
@@ -42,6 +42,56 @@ export function useAIWorker(): UseAIWorkerReturn {
     resolve: (score: number) => void;
     reject: (error: Error) => void;
   } | null>(null);
+
+  /**
+   * Handle messages from the worker
+   */
+  const handleWorkerMessage = (response: AIWorkerResponse) => {
+    switch (response.type) {
+      case 'computing':
+        // AI has started computing
+        break;
+
+      case 'moveComputed':
+        setIsComputing(false);
+        setLastComputationTime(response.computationTime);
+        
+        if (pendingPromiseRef.current) {
+          pendingPromiseRef.current.resolve(response.move);
+          pendingPromiseRef.current = null;
+        }
+        break;
+
+      case 'evaluated':
+        if (pendingEvaluationRef.current) {
+          pendingEvaluationRef.current.resolve(response.score);
+          pendingEvaluationRef.current = null;
+        }
+        break;
+
+      case 'error':
+        setIsComputing(false);
+        
+        if (pendingPromiseRef.current) {
+          pendingPromiseRef.current.reject(new Error(response.error));
+          pendingPromiseRef.current = null;
+        }
+        break;
+
+      case 'ready':
+        // Handled during initialization
+        break;
+
+      case 'cacheCleared':
+        // Cache cleared successfully
+        break;
+
+      default: {
+        const exhaustive: never = response;
+        console.warn('Unknown response type:', exhaustive);
+      }
+    }
+  };
 
   /**
    * Initialize the worker and AI player
@@ -126,7 +176,7 @@ export function useAIWorker(): UseAIWorkerReturn {
       }
 
       return new Promise((resolve, reject) => {
-        isComputingRef.current = true;
+        setIsComputing(true);
         pendingPromiseRef.current = { resolve, reject };
 
         workerRef.current!.postMessage({
@@ -179,56 +229,6 @@ export function useAIWorker(): UseAIWorkerReturn {
   }, []);
 
   /**
-   * Handle messages from the worker
-   */
-  const handleWorkerMessage = (response: AIWorkerResponse) => {
-    switch (response.type) {
-      case 'computing':
-        // AI has started computing
-        break;
-
-      case 'moveComputed':
-        isComputingRef.current = false;
-        lastComputationTimeRef.current = response.computationTime;
-        
-        if (pendingPromiseRef.current) {
-          pendingPromiseRef.current.resolve(response.move);
-          pendingPromiseRef.current = null;
-        }
-        break;
-
-      case 'evaluated':
-        if (pendingEvaluationRef.current) {
-          pendingEvaluationRef.current.resolve(response.score);
-          pendingEvaluationRef.current = null;
-        }
-        break;
-
-      case 'error':
-        isComputingRef.current = false;
-        
-        if (pendingPromiseRef.current) {
-          pendingPromiseRef.current.reject(new Error(response.error));
-          pendingPromiseRef.current = null;
-        }
-        break;
-
-      case 'ready':
-        // Handled during initialization
-        break;
-
-      case 'cacheCleared':
-        // Cache cleared successfully
-        break;
-
-      default: {
-        const exhaustive: never = response;
-        console.warn('Unknown response type:', exhaustive);
-      }
-    }
-  };
-
-  /**
    * Cleanup on unmount
    */
   useEffect(() => {
@@ -246,7 +246,7 @@ export function useAIWorker(): UseAIWorkerReturn {
     computeMove,
     evaluatePosition,
     clearCache,
-    isComputing: isComputingRef.current,
-    lastComputationTime: lastComputationTimeRef.current,
+    isComputing,
+    lastComputationTime,
   };
 }

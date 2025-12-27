@@ -4,8 +4,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import type { MoveEntry } from '../domain/models/GameState';
-import type { CornerShape } from '../constants/gameConfig';
-import { cornerShapeLabel } from './CornerConfig';
+import { cornerShapeLabel, type CornerShape } from './cornerUtils';
 import { BOARD, LAYOUT } from '../constants/dimensions';
 import { GameStatus } from '../domain/models/GameState';
 

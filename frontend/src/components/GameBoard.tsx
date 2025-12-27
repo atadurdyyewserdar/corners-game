@@ -176,7 +176,7 @@ const GameBoard: React.FC = () => {
 
   // Main game UI
   return (
-    <div className="flex flex-col items-center min-h-[100vh] justify-center bg-white py-6">
+    <div className="flex flex-col items-center min-h-screen justify-center bg-white py-6">
       <div className="w-full flex flex-col items-center">
         <div
           className="flex flex-col items-center"

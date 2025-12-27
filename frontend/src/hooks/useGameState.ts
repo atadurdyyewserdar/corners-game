@@ -263,6 +263,7 @@ export function useGameState() {
     state.pieces,
     state.cornerShape,
     state.pendingAIMove,
+    computeMove,
   ]);
 
   const startGame = useCallback((cornerShape: CornerShape, gameMode: GameMode, aiDifficulty: AIDifficulty | null) => {
