@@ -15,6 +15,10 @@ export type TimerResponse =
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * Handles incoming messages to control the timer.
+ * @param event The message event containing the timer command.
+ */
 self.onmessage = (event: MessageEvent<TimerMessage>) => {
   const message = event.data;
 
@@ -52,7 +56,10 @@ self.onmessage = (event: MessageEvent<TimerMessage>) => {
   }
 };
 
-// Handle worker termination
+/**
+ * Handles worker errors and cleans up the timer.
+ * @param error The error event.
+ */
 self.addEventListener('error', (error) => {
   console.error('Timer worker error:', error);
   if (intervalId !== null) {

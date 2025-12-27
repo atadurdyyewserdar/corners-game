@@ -40,6 +40,7 @@ export interface GameState {
   isAnimating: boolean;
   isAIThinking: boolean;
   pendingAIMove: { piece: PieceWithId; from: Position; to: Position } | null;
+  evaluationScore: number; // Position evaluation: positive = Player A advantage, negative = Player B advantage
 }
 
 export const initialGameState: GameState = {
@@ -58,4 +59,5 @@ export const initialGameState: GameState = {
   isAnimating: false,
   isAIThinking: false,
   pendingAIMove: null,
+  evaluationScore: 0,
 };

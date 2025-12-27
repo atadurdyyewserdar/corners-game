@@ -1,12 +1,7 @@
 import React from "react";
-import { CORNER_SHAPES, type CornerShape } from "../constants/gameConfig";
+import { CORNER_SHAPES } from "../constants/gameConfig";
 import { COLORS } from "../constants/theme";
-
-export { type CornerShape } from "../constants/gameConfig";
-
-export function cornerShapeLabel({ rows, cols }: CornerShape): string {
-  return `${rows}x${cols}`;
-}
+import { cornerShapeLabel, type CornerShape } from "./cornerUtils";
 
 interface CornerConfigProps {
   onSelect: (shape: CornerShape) => void;
